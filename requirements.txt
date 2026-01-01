@@ -1,0 +1,8 @@
+numpy
+pandas
+scikit-learn
+nltk
+spacy
+sentence-transformers
+pdfplumber
+python-docx
