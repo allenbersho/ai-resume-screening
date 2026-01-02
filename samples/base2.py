@@ -7,7 +7,7 @@ def read_text(file_path):
         return f.read()
 
 resume_dir = "data/resumes/"
-job_text = read_text("data/jobs/job1.txt")
+job_text = read_text("data/jobs/sample_job.txt")
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
