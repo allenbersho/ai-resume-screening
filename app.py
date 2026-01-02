@@ -26,4 +26,5 @@ results.sort(key=lambda x: x[1], reverse=True)
 
 print("Ranked Candidates:")
 for rank, (name, score) in enumerate(results, start=1):
-    print(f"{rank}. {name} → Match Score: {score:.4f}")
+    score *= 100
+    print(f"{rank}. {name} → Match Score: {score:.2f}%")
