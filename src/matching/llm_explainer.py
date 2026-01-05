@@ -13,19 +13,31 @@ client = Groq(api_key=GROQ_API_KEY)
 
 def llm_explanation(resume_skills, job_skills):
     prompt = f"""
-Resume skills: {resume_skills}
-Job required skills: {job_skills}
+You are an AI assistant used in an automated resume screening system.
 
-Tasks:
-1. Normalize the skills.
-2. Explain why the candidate matches or does not match the job.
-3. Clearly list missing skills.
-4. Suggest improvements.
+Resume skills :{resume_skills}
+
+Job required skills :{job_skills}
 
 Rules:
 - Do NOT invent skills.
 - Do NOT estimate experience.
-- Be concise.
+- Do NOT change any match score.
+- Only reason using the given skills.
+
+Tasks:
+1. Normalize skill names to standard industry terms.
+2. Explain why the candidate matches or does not match the job.
+3. List missing skills clearly.
+4. Suggest improvements concisely.
+
+Return output strictly in this format:
+Normalized Resume Skills:
+Normalized Job Skills:
+Explanation:
+Skill Gaps:
+Suggestions:
+Make sure to follow the format exactly and do not add any extra information. Add the detail in brief yet comprehensive manner.
 """
 
     response = client.chat.completions.create(
