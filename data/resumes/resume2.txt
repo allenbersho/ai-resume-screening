@@ -1,2 +1,2 @@
-Skills: Python, Machine Learning, NLP
+Skills: Machine Learning, NLP
 Experience: 2 years
