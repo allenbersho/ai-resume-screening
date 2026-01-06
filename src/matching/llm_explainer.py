@@ -20,8 +20,7 @@ Resume skills :{resume_skills}
 Job required skills :{job_skills}
 
 Rules:
-- Do NOT invent skills.
-- Do NOT estimate experience.
+- No hallucination
 - Do NOT change any match score.
 - Only reason using the given skills.
 

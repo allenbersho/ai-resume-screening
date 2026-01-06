@@ -1,0 +1,6 @@
+MATCH_THRESHOLD = 60.0
+AUTO_GT_THRESHOLD = 65.0
+PRECISION_K_VALUES = [1, 3, 5]
+
+RESUME_DIR = "data/resumes/"
+JOB_PATH = "data/jobs/job1.txt"
