@@ -1,4 +1,5 @@
 import os
+from src.matching.skill_normalizer import normalize_skills
 
 from src.config.settings import *
 from src.io.loaders import extract_text, generate_metadata
@@ -17,40 +18,42 @@ def main():
     results = []
 
     for file in os.listdir(RESUME_DIR):
-    path = os.path.join(RESUME_DIR, file)
+        path = os.path.join(RESUME_DIR, file)
 
-    resume_text = extract_text(path)
-    resume_sections = extract_resume_sections(resume_text)
+        resume_text = extract_text(path)
+        resume_sections = extract_resume_sections(resume_text)
 
-    metadata = generate_metadata(path)
+        metadata = generate_metadata(path)
 
-    section_scores = compute_sectionwise_similarity(
-        resume_sections,
-        job_text
-    )
+        section_scores = compute_sectionwise_similarity(
+            resume_sections,
+            job_text
+        )
 
-    score = section_scores["final_score"]
+        score = section_scores["final_score"]
 
-    rule_exp = rule_based_explanation(
-        resume_sections["skills"],
-        job_text
-    )
+        rule_exp = rule_based_explanation(
+            resume_sections["skills"],
+            job_text
+        )
+        normalized_resume_skills = normalize_skills(rule_exp["matched_skills"])
+        normalized_missing_skills = normalize_skills(rule_exp["missing_skills"])
 
-    llm_exp = llm_explanation(
-        rule_exp["matched_skills"],
-        rule_exp["missing_skills"]
-    )
+        llm_exp = llm_explanation(
+            normalized_resume_skills,
+            normalized_missing_skills
+        )
 
-    ground_truth = 1 if score >= AUTO_GT_THRESHOLD else 0
+        ground_truth = 1 if score >= AUTO_GT_THRESHOLD else 0
 
-    results.append({
-        "resume_id": metadata["resume_id"],
-        "score": score,
-        "section_scores": section_scores,
-        "ground_truth": ground_truth,
-        "rule_exp": rule_exp,
-        "llm_exp": llm_exp
-    })
+        results.append({
+            "resume_id": metadata["resume_id"],
+            "score": score,
+            "section_scores": section_scores,
+            "ground_truth": ground_truth,
+            "rule_exp": rule_exp,
+            "llm_exp": llm_exp
+        })
 
 
     results.sort(key=lambda x: x["score"], reverse=True)
