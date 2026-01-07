@@ -6,6 +6,10 @@ from src.matching.similarity import compute_similarity
 from src.matching.explanation import rule_based_explanation
 from src.matching.llm_explainer import llm_explanation
 from src.evaluation.metrics import binary_metrics, precision_at_k
+from src.io.section_extractor import extract_resume_sections
+from src.matching.similarity import compute_sectionwise_similarity
+
+
 
 
 def main():
@@ -13,29 +17,41 @@ def main():
     results = []
 
     for file in os.listdir(RESUME_DIR):
-        path = os.path.join(RESUME_DIR, file)
+    path = os.path.join(RESUME_DIR, file)
 
-        resume_text = extract_text(path)
-        metadata = generate_metadata(path)
+    resume_text = extract_text(path)
+    resume_sections = extract_resume_sections(resume_text)
 
-        score = round(compute_similarity(resume_text, job_text) * 100, 2)
+    metadata = generate_metadata(path)
 
-        rule_exp = rule_based_explanation(resume_text, job_text)
+    section_scores = compute_sectionwise_similarity(
+        resume_sections,
+        job_text
+    )
 
-        llm_exp = llm_explanation(
-            rule_exp["matched_skills"],
-            rule_exp["missing_skills"]
-        )
+    score = section_scores["final_score"]
 
-        ground_truth = 1 if score >= AUTO_GT_THRESHOLD else 0
+    rule_exp = rule_based_explanation(
+        resume_sections["skills"],
+        job_text
+    )
 
-        results.append({
-            "resume_id": metadata["resume_id"],
-            "score": score,
-            "ground_truth": ground_truth,
-            "rule_exp": rule_exp,
-            "llm_exp": llm_exp
-        })
+    llm_exp = llm_explanation(
+        rule_exp["matched_skills"],
+        rule_exp["missing_skills"]
+    )
+
+    ground_truth = 1 if score >= AUTO_GT_THRESHOLD else 0
+
+    results.append({
+        "resume_id": metadata["resume_id"],
+        "score": score,
+        "section_scores": section_scores,
+        "ground_truth": ground_truth,
+        "rule_exp": rule_exp,
+        "llm_exp": llm_exp
+    })
+
 
     results.sort(key=lambda x: x["score"], reverse=True)
 
