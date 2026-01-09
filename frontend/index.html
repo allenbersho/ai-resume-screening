@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Resume Screening</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>AI Resume Screening System</h1>
+
+  <section class="upload">
+    <h2>Upload Job & Resumes</h2>
+
+    <label>Job Description (PDF/DOCX/TXT)</label>
+    <input type="file" id="jobFile" required />
+
+    <label>Resumes (Multiple)</label>
+    <input type="file" id="resumeFiles" multiple required />
+
+    <button onclick="analyze()">Analyze</button>
+  </section>
+
+  <section class="results">
+    <h2>Ranked Candidates</h2>
+    <div id="output"></div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>

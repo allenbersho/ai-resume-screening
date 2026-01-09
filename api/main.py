@@ -1,91 +1,128 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from typing import List
+import os
+import shutil
+import tempfile
+
+import pdfplumber
+import docx
 
 from src.matching.similarity import compute_similarity
 from src.matching.explanation import rule_based_explanation
 from src.matching.llm_explainer import llm_explanation
+from fastapi.middleware.cors import CORSMiddleware
 
-from typing import List
-from dotenv import load_dotenv
-load_dotenv()
+# -------------------------------------------------
+# APP INITIALIZATION (MUST BE AT TOP LEVEL)
+# -------------------------------------------------
 
 app = FastAPI(
-    title="AI Resume Screening & Job Matching API",
-    description="Hybrid AI system using embeddings + LLM explainability",
-    version="1.0"
+    title="AI Resume Screening API",
+    description="Resume screening with PDF/DOCX upload support",
+    version="1.1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # allow frontend access
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
+# -------------------------------------------------
+# FILE TEXT EXTRACTION
+# -------------------------------------------------
 
-class ResumeItem(BaseModel):
-    candidate_id: str
-    resume_text: str
+def extract_text_from_file(file_path: str) -> str:
+    if file_path.lower().endswith(".pdf"):
+        text = ""
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                text += page.extract_text() or ""
+        return text
 
-class BatchMatchRequest(BaseModel):
-    job_text: str
-    resumes: List[ResumeItem]
+    elif file_path.lower().endswith(".docx"):
+        document = docx.Document(file_path)
+        return "\n".join(p.text for p in document.paragraphs)
 
-class CandidateResult(BaseModel):
-    candidate_id: str
-    match_score: float
-    rule_based_explanation: dict
-    llm_explanation: str
+    elif file_path.lower().endswith(".txt"):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
 
-class BatchMatchResponse(BaseModel):
-    ranked_candidates: List[CandidateResult]
+    else:
+        raise ValueError("Unsupported file format")
 
-class MatchRequest(BaseModel):
-    resume_text: str
-    job_text: str
+# -------------------------------------------------
+# ROUTES
+# -------------------------------------------------
 
-class MatchResponse(BaseModel):
-    match_score: float
-    rule_based_explanation: dict
-    llm_explanation: str
+@app.get("/")
+def root():
+    return {"message": "AI Resume Screening API is running"}
 
-@app.post("/match", response_model=MatchResponse)
-def match_resume_to_job(request: MatchRequest):
-    resume_text = request.resume_text
-    job_text = request.job_text
+@app.post("/analyze/upload")
+async def analyze_uploaded_files(
+    job_file: UploadFile = File(...),
+    resumes: List[UploadFile] = File(...)
+):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            # -----------------------------
+            # SAVE & READ JOB FILE
+            # -----------------------------
+            job_path = os.path.join(tmpdir, job_file.filename)
+            with open(job_path, "wb") as buffer:
+                shutil.copyfileobj(job_file.file, buffer)
 
-    score = compute_similarity(resume_text, job_text)
+            job_text = extract_text_from_file(job_path)
 
-    rule_exp = rule_based_explanation(resume_text, job_text)
+            results = []
 
-    llm_exp = llm_explanation(
-        rule_exp["matched_skills"] + rule_exp["missing_skills"],
-        rule_exp["matched_skills"]
-    )
+            # -----------------------------
+            # PROCESS RESUMES
+            # -----------------------------
+            for resume in resumes:
+                resume_path = os.path.join(tmpdir, resume.filename)
 
-    return {
-        "match_score": round(score * 100, 2),
-        "rule_based_explanation": rule_exp,
-        "llm_explanation": llm_exp
-    }
-    
-@app.post("/match/batch", response_model=BatchMatchResponse)
-def batch_match_resumes(request: BatchMatchRequest):
-    job_text = request.job_text
-    results = []
+                with open(resume_path, "wb") as buffer:
+                    shutil.copyfileobj(resume.file, buffer)
 
-    for resume in request.resumes:
-        score = compute_similarity(resume.resume_text, job_text)
+                resume_text = extract_text_from_file(resume_path)
 
-        rule_exp = rule_based_explanation(resume.resume_text, job_text)
+                # ---- Similarity (FORCE PYTHON FLOAT) ----
+                raw_score = compute_similarity(resume_text, job_text)
+                score_percent = float(round(float(raw_score) * 100, 2))
 
-        llm_exp = llm_explanation(
-            rule_exp["matched_skills"] + rule_exp["missing_skills"],
-            rule_exp["matched_skills"]
-        )
+                # ---- Rule-based explanation ----
+                rule_exp = rule_based_explanation(resume_text, job_text)
 
-        results.append({
-            "candidate_id": resume.candidate_id,
-            "match_score": round(score * 100, 2),
-            "rule_based_explanation": rule_exp,
-            "llm_explanation": llm_exp
-        })
+                # ---- LLM explanation (FORCE STRING) ----
+                llm_exp = str(
+                    llm_explanation(
+                        rule_exp["matched_skills"] + rule_exp["missing_skills"],
+                        rule_exp["matched_skills"]
+                    )
+                )
 
-    results.sort(key=lambda x: x["match_score"], reverse=True)
+                results.append({
+                    "resume_id": os.path.splitext(resume.filename)[0],
+                    "match_score": score_percent,
+                    "matched_skills": rule_exp["matched_skills"],
+                    "missing_skills": rule_exp["missing_skills"],
+                    "llm_explanation": llm_exp
+                })
 
-    return {"ranked_candidates": results}
+            # -----------------------------
+            # RANK RESULTS
+            # -----------------------------
+            results.sort(key=lambda x: x["match_score"], reverse=True)
 
+            return {
+                "job_file": job_file.filename,
+                "ranked_resumes": results
+            }
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

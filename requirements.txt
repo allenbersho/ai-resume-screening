@@ -6,3 +6,12 @@ spacy
 sentence-transformers
 pdfplumber
 python-docx
+fastapi
+uvicorn
+python-multipart
+sentence-transformers
+scikit-learn
+pdfplumber
+python-docx
+python-dotenv
+groq

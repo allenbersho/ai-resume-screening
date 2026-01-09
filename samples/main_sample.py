@@ -14,12 +14,12 @@ from src.matching.llm_explainer import llm_explanation
 from src.evaluation.metrics import binary_metrics, precision_at_k
 
 
-def run_pipeline(resume_dir=RESUME_DIR, job_path=JOB_PATH):
-    job_text = extract_text(job_path)
+def main():
+    job_text = extract_text(JOB_PATH)
     results = []
 
-    for file in os.listdir(resume_dir):
-        path = os.path.join(resume_dir, file)
+    for file in os.listdir(RESUME_DIR):
+        path = os.path.join(RESUME_DIR, file)
 
         resume_text = extract_text(path)
         resume_sections = extract_resume_sections(resume_text)
@@ -79,55 +79,46 @@ def run_pipeline(resume_dir=RESUME_DIR, job_path=JOB_PATH):
             "education_level": education_level,
             "experience_level": experience_level,
             "ground_truth": ground_truth,
-            "matched_skills": normalized_resume_skills,
-            "missing_skills": normalized_missing_skills,
-            "explanation": llm_exp
+            "rule_exp": rule_exp,
+            "llm_exp": llm_exp
         })
 
     results.sort(key=lambda x: x["score"], reverse=True)
+
+    print("\n================ RANKED RESUMES ================\n")
+
+    for rank, r in enumerate(results, start=1):
+        print(f"Rank {rank}")
+        print(f"Resume ID        : {r['resume_id']}")
+        print(f"Final Score     : {r['score']}%")
+        print(f"Education Level : {r['education_level']}")
+        print(f"Experience Level: {r['experience_level']}")
+        print(f"Matched Skills  : {r['rule_exp']['matched_skills']}")
+        print(f"Missing Skills  : {r['rule_exp']['missing_skills']}")
+        print("Explanation:")
+        print(r["llm_exp"])
+        print("-" * 60)
 
     y_true = [r["ground_truth"] for r in results]
     y_pred = [1 if r["score"] >= MATCH_THRESHOLD else 0 for r in results]
 
     precision, recall, f1, accuracy = binary_metrics(y_true, y_pred)
 
-    metrics = {
-        "precision": round(precision, 3),
-        "recall": round(recall, 3),
-        "f1": round(f1, 3),
-        "accuracy": round(accuracy, 3),
-    }
+    print("\n================ BINARY METRICS ================\n")
+    print("Precision :", round(precision, 3))
+    print("Recall    :", round(recall, 3))
+    print("F1 Score  :", round(f1, 3))
+    print("Accuracy  :", round(accuracy, 3))
 
-    ranking_metrics = {}
+    print("\n================ RANKING METRICS ================\n")
     for k in PRECISION_K_VALUES:
         if len(results) >= k:
-            ranking_metrics[f"precision@{k}"] = round(
-                precision_at_k(results, k), 3
-            )
+            print(f"Precision@{k} :", round(precision_at_k(results, k), 3))
 
-    return {
-        "rankings": results,
-        "metrics": metrics,
-        "ranking_metrics": ranking_metrics
-    }
+def run_pipeline(resume_dir, job_path):
+    # logic from app.py
+    return results, metrics
 
 
-# OPTIONAL: CLI SUPPORT (for testing)
 if __name__ == "__main__":
-    output = run_pipeline()
-
-    print("\n================ RANKED RESUMES ================\n")
-    for i, r in enumerate(output["rankings"], 1):
-        print(f"Rank {i}")
-        print(f"Resume ID        : {r['resume_id']}")
-        print(f"Final Score     : {r['score']}%")
-        print(f"Education Level : {r['education_level']}")
-        print(f"Experience Level: {r['experience_level']}")
-        print(f"Matched Skills  : {r['matched_skills']}")
-        print(f"Missing Skills  : {r['missing_skills']}")
-        print("Explanation:")
-        print(r["explanation"])
-        print("-" * 60)
-
-    print("\nMETRICS:", output["metrics"])
-    print("RANKING METRICS:", output["ranking_metrics"])
+    main()
