@@ -24,82 +24,72 @@ The system extracts text from resumes, processes it using NLP techniques, compar
 
 ## 📂 Project Structure
 
+```
 ai-resume-screening/
-├── api/ # Backend API logic
+├── api/
 ├── data/
-│ └── jobs/ # Job descriptions
-├── frontend/ # Frontend UI files
-├── samples/ # Sample resumes
-├── src/ # Core resume screening logic
-├── app.py # Main application file
-├── structure.md # Architecture documentation
-├── test.py # Testing script
-├── requirements.txt # Project dependencies
+│   └── jobs/
+├── frontend/
+├── samples/
+├── src/
+├── app.py
+├── structure.md
+├── test.py
+├── requirements.txt
 └── .gitignore
-
-yaml
-Copy code
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Programming Language:** Python  
-- **NLP Techniques:** TF-IDF, Cosine Similarity  
-- **Machine Learning:** scikit-learn  
-- **Backend:** Flask / FastAPI  
-- **Frontend:** HTML, CSS, JavaScript  
+- Programming Language: Python  
+- NLP Techniques: TF-IDF, Cosine Similarity  
+- Machine Learning: scikit-learn  
+- Backend: Flask / FastAPI  
+- Frontend: HTML, CSS, JavaScript  
 
 ---
 
 ## ⚙️ Installation
 
-### Step 1: Clone the Repository
+### Clone the Repository
 
 ```bash
 git clone https://github.com/allenbersho/ai-resume-screening.git
 cd ai-resume-screening
-Step 2: Install Dependencies
-bash
-Copy code
+```
+
+### Install Dependencies
+
+```bash
 pip install -r requirements.txt
-▶️ Usage
-Run the Application
-bash
-Copy code
+```
+
+---
+
+## ▶️ Usage
+
+```bash
 python app.py
-This starts the backend server responsible for resume screening.
+```
 
-Run Tests
-bash
-Copy code
+---
+
+## 🧪 Testing
+
+```bash
 python test.py
-This script tests resume-to-job matching using sample data.
+```
 
-🔄 Workflow
-Add resumes to the samples/ folder
+---
 
-Add job descriptions to the data/jobs/ folder
+## 🤝 Contribution
 
-Run the application
+Contributions are welcome to improve resume parsing, NLP accuracy, and UI features.
 
-The system processes resumes and computes similarity scores
+---
 
-Candidates are ranked based on job relevance
+## 📝 License
 
-📊 Example
-If the job description requires Python, Machine Learning, and SQL, resumes containing similar skills and keywords will receive higher scores and appear at the top of the ranking.
-
-🤝 Contribution
-Contributions are welcome. You can improve this project by:
-
-Adding support for more resume formats (PDF, DOCX)
-
-Enhancing NLP accuracy
-
-Building an advanced recruiter dashboard
-
-Integrating deep learning models
-
-📝 License
-This project is open-source and available for educational and research purposes.
+Open-source project for educational and research use.
